@@ -1,0 +1,6 @@
+requests
+cloudscraper
+beautifulsoup4
+psycopg2-binary
+pandas
+python-dotenv
