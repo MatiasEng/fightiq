@@ -15,10 +15,24 @@ load_dotenv()
 
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "model", "fighter_model.pkl")
 
-# load model once at startup, not at every request
-_bundle = joblib.load(MODEL_PATH)
-MODEL = _bundle["model"]
-IMPUTER = _bundle["imputer"]
+# lazy-load model — first predict call loads it, app can start without it
+_bundle = None
+
+
+def _ensure_model():
+    global _bundle
+    if _bundle is not None:
+        return _bundle
+    _bundle = joblib.load(MODEL_PATH)
+    return _bundle
+
+
+def _get_model():
+    return _ensure_model()["model"]
+
+
+def _get_imputer():
+    return _ensure_model()["imputer"]
 
 
 FEATURE_COLS = [
@@ -236,8 +250,8 @@ def predict(fighter_a_name: str, fighter_b_name: str) -> dict:
             raise ValueError(f"Fighter not found: {fighter_b_name}")
 
         vector = build_feature_vector(a, b)
-        imputed = IMPUTER.transform(vector)
-        proba = MODEL.predict_proba(imputed)[0]
+        imputed = _get_imputer().transform(vector)
+        proba = _get_model().predict_proba(imputed)[0]
 
         a_prob = round(float(proba[1]), 4)
         b_prob = round(float(proba[0]), 4)
