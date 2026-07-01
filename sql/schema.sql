@@ -35,3 +35,26 @@ CREATE TABLE fights (
     weight_class    TEXT,
     scraped_at      TIMESTAMP DEFAULT NOW()
 );
+
+CREATE TABLE fighter_fight_stats (
+    fighter_id       TEXT REFERENCES fighters(id),
+    fight_id         TEXT REFERENCES fights(id),
+    fight_date       DATE NOT NULL,
+
+    wins             INT DEFAULT 0,
+    losses           INT DEFAULT 0,
+    draws            INT DEFAULT 0,
+    kos              INT DEFAULT 0,
+    submissions      INT DEFAULT 0,
+    total_fights     INT DEFAULT 0,
+
+    last_5_wins      INT DEFAULT 0,
+    last_5_losses    INT DEFAULT 0,
+    streak           INT DEFAULT 0, -- positive=win streak, negative=loss streak
+
+    PRIMARY KEY (fighter_id, fight_id)
+);
+
+CREATE INDEX idx_ffs_fighter ON fighter_fight_stats(fighter_id);
+CREATE INDEX idx_ffs_date ON fighter_fight_stats(fight_date);
+
