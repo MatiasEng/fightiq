@@ -17,7 +17,13 @@ from api.schemas import (
     FighterDetail,
     FighterFight,
 )
-from api.predict import predict, search_fighters, get_fighter_by_id, get_fighter_fights, get_conn
+from api.predict import (
+    predict,
+    search_fighters,
+    get_fighter_by_id,
+    get_fighter_fights,
+    get_conn,
+)
 
 limiter = Limiter(key_func=get_remote_address)
 
@@ -29,7 +35,10 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
-    CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
+    CORSMiddleware,
+    allow_origins=["https://fightiq-one.vercel.app/"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
