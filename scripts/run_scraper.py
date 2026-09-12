@@ -11,8 +11,8 @@ from scraper.fights import scrape_all_fights
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
 if __name__ == "__main__":
-    # scrape_all_fighters()
-    # scrape_all_fights()
+    scrape_all_fighters()
+    scrape_all_fights()
 
     logger = logging.getLogger(__name__)
     logger.info("Updating fighter stats from fight data...")

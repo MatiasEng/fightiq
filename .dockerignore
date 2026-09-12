@@ -1,0 +1,12 @@
+.git
+.gitignore
+venv
+__pycache__
+*.pyc
+.env
+test_prediction.py
+TODO.md
+scraper
+scripts
+sql
+frontend

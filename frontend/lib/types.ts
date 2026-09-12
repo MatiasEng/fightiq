@@ -41,10 +41,18 @@ export interface FighterFight {
   result: string
 }
 
+export interface SHAPFeature {
+  feature: string
+  shap_value: number
+  direction: string
+}
+
 export interface PredictResponse {
   fighter_a: FighterStats
   fighter_b: FighterStats
   fighter_a_win_prob: number
   fighter_b_win_prob: number
   predicted_winner: string
+  explanation: SHAPFeature[]
+  llm_explanation: string
 }

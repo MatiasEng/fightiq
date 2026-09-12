@@ -40,14 +40,6 @@ class FighterDetail(BaseModel):
     last_5_wins: int
 
 
-class PredictResponse(BaseModel):
-    fighter_a: FighterStats
-    fighter_b: FighterStats
-    fighter_a_win_prob: float
-    fighter_b_win_prob: float
-    predicted_winner: str
-
-
 class FighterSearchResult(BaseModel):
     id: str
     name: str
@@ -68,3 +60,17 @@ class FighterFight(BaseModel):
 
 class ErrorResponse(BaseModel):
     detail: str
+
+class SHAPFeature(BaseModel):
+    feature: str
+    shap_value: float
+    direction: str
+
+class PredictResponse(BaseModel):
+    fighter_a: FighterStats
+    fighter_b: FighterStats
+    fighter_a_win_prob: float
+    fighter_b_win_prob: float
+    predicted_winner: str
+    explanation: list[SHAPFeature]
+    llm_explanation: str

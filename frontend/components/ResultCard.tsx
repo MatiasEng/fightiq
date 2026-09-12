@@ -2,6 +2,7 @@ import Link from "next/link"
 import type { PredictResponse } from "@/lib/types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
 
 interface ResultCardProps {
   result: PredictResponse
@@ -14,6 +15,8 @@ export default function ResultCard({ result }: ResultCardProps) {
     fighter_a_win_prob,
     fighter_b_win_prob,
     predicted_winner,
+    llm_explanation,
+    explanation,
   } = result
 
   return (
@@ -41,6 +44,30 @@ export default function ResultCard({ result }: ResultCardProps) {
             {predicted_winner}
           </p>
         </div>
+
+        {llm_explanation && (
+          <div className="p-4 bg-primary/5 border border-primary/10 rounded-xl">
+            <p className="text-sm text-muted-foreground mb-2 text-center font-medium">
+              Why the model predicts this outcome
+            </p>
+            <p className="text-sm text-foreground leading-relaxed">
+              {llm_explanation}
+            </p>
+          </div>
+        )}
+
+        {explanation.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium text-muted-foreground text-center">
+              Key Factors (by impact)
+            </h3>
+            <div className="space-y-1.5">
+              {explanation.slice(0, 6).map((e) => (
+                <ExplanationRow key={e.feature} feature={e.feature} value={e.shap_value} />
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-muted-foreground">
@@ -180,4 +207,18 @@ function formatStreak(streak: number): string {
   if (streak > 0) return `${streak}W`
   if (streak < 0) return `${Math.abs(streak)}L`
   return "0"
+}
+
+function ExplanationRow({ feature, value }: { feature: string; value: number }) {
+  const label = feature.replace(/_/g, " ")
+  const favorsA = value > 0
+  return (
+    <div className="flex items-center justify-between py-1.5 px-3 bg-muted/30 rounded-lg">
+      <span className="text-sm text-foreground capitalize">{label}</span>
+      <span className={cn("text-sm font-mono", favorsA ? "text-primary" : "text-blue-600")}>
+        {favorsA ? "← " : "→ "}
+        {favorsA ? "Fighter A" : "Fighter B"}
+      </span>
+    </div>
+  )
 }

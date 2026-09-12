@@ -11,6 +11,10 @@ import numpy as np
 import psycopg2
 from dotenv import load_dotenv
 
+from model.explainer import explain_prediction
+
+from api.llm import generate_explanation
+
 load_dotenv()
 
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "model", "fighter_model.pkl")
@@ -51,7 +55,7 @@ FEATURE_COLS = [
 
 
 def get_conn():
-    return psycopg2.connect(os.getenv("DATABASE_URL"))
+    return psycopg2.connect(os.getenv("DATABASE_URL", "").strip())
 
 
 def _parse_fighter_row(row: tuple, cols: list[str]) -> dict:
@@ -237,55 +241,6 @@ def build_feature_vector(a: dict, b: dict) -> np.ndarray:
     return np.array(vector, dtype=float).reshape(1, -1)
 
 
-def predict(fighter_a_name: str, fighter_b_name: str) -> dict:
-    conn = get_conn()
-
-    try:
-        a = find_fighter(conn, fighter_a_name)
-        if not a:
-            raise ValueError(f"Fighter not found: {fighter_a_name}")
-
-        b = find_fighter(conn, fighter_b_name)
-        if not b:
-            raise ValueError(f"Fighter not found: {fighter_b_name}")
-
-        vector = build_feature_vector(a, b)
-        imputed = _get_imputer().transform(vector)
-        proba = _get_model().predict_proba(imputed)[0]
-
-        a_prob = round(float(proba[1]), 4)
-        b_prob = round(float(proba[0]), 4)
-        return {
-            "fighter_a": {
-                "id": a["id"],
-                "name": a["name"],
-                "wins": a["pro_wins"] or 0,
-                "losses": a["pro_losses"] or 0,
-                "draws": a["pro_draws"] or 0,
-                "reach_cm": a["reach_cm"],
-                "stance": a["stance"],
-                "finish_rate": round(finish_rate_val(a), 4),
-                "streak": a["streak"] or 0,
-            },
-            "fighter_b": {
-                "id": b["id"],
-                "name": b["name"],
-                "wins": b["pro_wins"] or 0,
-                "losses": b["pro_losses"] or 0,
-                "draws": b["pro_draws"] or 0,
-                "reach_cm": b["reach_cm"],
-                "stance": b["stance"],
-                "finish_rate": round(finish_rate_val(b), 4),
-                "streak": b["streak"] or 0,
-            },
-            "fighter_a_win_prob": a_prob,
-            "fighter_b_win_prob": b_prob,
-            "predicted_winner": a["name"] if a_prob > b_prob else b["name"],
-        }
-    finally:
-        conn.close()
-
-
 def get_fighter_fights(conn, fighter_id: str) -> list[dict]:
     cur = conn.cursor()
     try:
@@ -369,4 +324,59 @@ def search_fighters(query: str) -> list[dict]:
         return [{"id": r[0], "name": r[1]} for r in rows]
     finally:
         cur.close()
+        conn.close()
+
+def predict(fighter_a_name: str, fighter_b_name: str) -> dict:
+    conn = get_conn()
+
+    try:
+        a = find_fighter(conn, fighter_a_name)
+        if not a:
+            raise ValueError(f"Fighter not found: {fighter_a_name}")
+        b = find_fighter(conn, fighter_b_name)
+        if not b:
+            raise ValueError(f"Fighter not found: {fighter_b_name}")
+
+        vector = build_feature_vector(a, b)
+        imputed = _get_imputer().transform(vector)
+        proba = _get_model().predict_proba(imputed)[0]
+
+        a_proba = round(float(proba[1]), 4)
+        b_proba = round(float(proba[0]), 4)
+
+        explanation = explain_prediction(imputed)
+
+        result = {
+            "fighter_a": {
+                "id":          a["id"],
+                "name":        a["name"],
+                "wins":        a["pro_wins"] or 0,
+                "losses":      a["pro_losses"] or 0,
+                "draws":       a["pro_draws"] or 0,
+                "reach_cm":    a["reach_cm"],
+                "stance":      a["stance"],
+                "finish_rate": round(finish_rate_val(a), 4),
+                "streak":      a["streak"] or 0,
+            },
+            "fighter_b": {
+                "id":          b["id"],
+                "name":        b["name"],
+                "wins":        b["pro_wins"] or 0,
+                "losses":      b["pro_losses"] or 0,
+                "draws":       b["pro_draws"] or 0,
+                "reach_cm":    b["reach_cm"],
+                "stance":      b["stance"],
+                "finish_rate": round(finish_rate_val(b), 4),
+                "streak":      b["streak"] or 0,
+            },
+            "fighter_a_win_prob": a_proba,
+            "fighter_b_win_prob": b_proba,
+            "predicted_winner":   a["name"] if a_proba > b_proba else b["name"],
+            "explanation":        explanation,
+        }
+
+        result["llm_explanation"] = generate_explanation(result)
+        return result
+
+    finally:
         conn.close()

@@ -9,3 +9,5 @@ python-dotenv
 fastapi
 uvicorn
 slowapi>=0.1.10
+shap
+google-genai

@@ -24,6 +24,9 @@ from api.predict import (
     get_fighter_fights,
     get_conn,
 )
+from api.llm import validate_api_key
+
+validate_api_key()
 
 limiter = Limiter(key_func=get_remote_address)
 
